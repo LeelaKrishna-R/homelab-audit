@@ -1,0 +1,39 @@
+{
+  "name": "homelab-audit",
+  "version": "0.1.0",
+  "description": "Audits docker-compose files for common security and reliability foot-guns in self-hosted / homelab setups.",
+  "type": "module",
+  "bin": {
+    "homelab-audit": "src/cli.ts"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "license": "MIT",
+  "files": [
+    "src"
+  ],
+  "keywords": [
+    "docker-compose",
+    "homelab",
+    "selfhosted",
+    "security",
+    "linter",
+    "audit"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit && prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "audit": "node src/cli.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "prettier": "^3.9.1",
+    "typescript": "^6.0.3"
+  }
+}

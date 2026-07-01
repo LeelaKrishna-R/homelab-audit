@@ -1,0 +1,225 @@
+import type { Finding, Rule } from "./types.ts";
+
+const SENSITIVE_PORTS = new Map<number, string>([
+  [1433, "SQL Server"],
+  [2375, "Docker API"],
+  [2376, "Docker API"],
+  [3306, "MySQL"],
+  [5432, "PostgreSQL"],
+  [5672, "RabbitMQ"],
+  [5984, "CouchDB"],
+  [6379, "Redis"],
+  [9200, "Elasticsearch"],
+  [11211, "Memcached"],
+  [15672, "RabbitMQ management"],
+  [27017, "MongoDB"],
+]);
+
+const WILDCARD_IPS = new Set(["", "0.0.0.0", "::", "::0", "0.0.0.0/0"]);
+
+const SECRET_KEY =
+  /(pass(word|wd)?|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|_key)$/i;
+
+const DANGEROUS_CAPS = /^(SYS_ADMIN|NET_ADMIN|ALL|SYS_PTRACE|SYS_MODULE)$/i;
+const HIGH_CAPS = /^(SYS_ADMIN|ALL|SYS_MODULE)$/i;
+
+const SENSITIVE_ROOTS = ["/etc", "/root", "/var/run", "/proc", "/sys", "/boot"];
+const BENIGN_MOUNTS = new Set(["/etc/localtime", "/etc/timezone"]);
+
+const isWildcard = (hostIp: string | undefined): boolean =>
+  hostIp === undefined || WILDCARD_IPS.has(hostIp);
+
+const isLiteralSecret = (value: string | undefined): boolean =>
+  value !== undefined &&
+  value.trim() !== "" &&
+  !value.includes("${") &&
+  !/^\$[A-Za-z]/.test(value);
+
+function imageTag(image: string): string | undefined {
+  if (image.includes("@")) return "digest";
+  const lastSlash = image.lastIndexOf("/");
+  const lastColon = image.lastIndexOf(":");
+  return lastColon > lastSlash ? image.slice(lastColon + 1) : undefined;
+}
+
+export const rules: Rule[] = [
+  {
+    id: "HL001",
+    check: (s): Finding[] =>
+      s.privileged
+        ? [
+            {
+              rule: "HL001",
+              severity: "high",
+              service: s.name,
+              message: "Runs in privileged mode (full access to host devices)",
+              fix: "Remove `privileged: true`; grant only the specific `cap_add` it needs",
+            },
+          ]
+        : [],
+  },
+  {
+    id: "HL002",
+    check: (s): Finding[] =>
+      s.volumes
+        .filter((v) => v.source === "/var/run/docker.sock")
+        .map((): Finding => ({
+          rule: "HL002",
+          severity: "high",
+          service: s.name,
+          message: "Mounts the Docker socket (equivalent to root on the host)",
+          fix: "Avoid mounting docker.sock; if a tool truly needs it, front it with a least-privilege socket proxy",
+        })),
+  },
+  {
+    id: "HL003",
+    check: (s): Finding[] =>
+      s.env
+        .filter(
+          (e) =>
+            SECRET_KEY.test(e.key) &&
+            !/public/i.test(e.key) &&
+            isLiteralSecret(e.value),
+        )
+        .map((e): Finding => ({
+          rule: "HL003",
+          severity: "high",
+          service: s.name,
+          message: `Hardcoded secret in environment: ${e.key}`,
+          fix: "Move it to a git-ignored `.env` file, Docker secrets, or a `${VAR}` reference from the host env",
+        })),
+  },
+  {
+    id: "HL004",
+    check: (s): Finding[] =>
+      s.capAdd
+        .filter((c) => DANGEROUS_CAPS.test(c))
+        .map((c): Finding => ({
+          rule: "HL004",
+          severity: HIGH_CAPS.test(c) ? "high" : "medium",
+          service: s.name,
+          message: `Adds dangerous capability: ${c}`,
+          fix: "Drop it unless required; prefer the narrowest capability that works",
+        })),
+  },
+  {
+    id: "HL005",
+    check: (s): Finding[] =>
+      s.ports
+        .filter((p) => isWildcard(p.hostIp))
+        .map((p): Finding => {
+          const datastore =
+            p.containerPort !== undefined
+              ? SENSITIVE_PORTS.get(p.containerPort)
+              : undefined;
+          const label =
+            p.containerPort !== undefined
+              ? `port ${p.containerPort}`
+              : `port ${p.raw}`;
+          const bind = p.containerPort ?? "PORT";
+          return {
+            rule: "HL005",
+            severity: datastore ? "high" : "medium",
+            service: s.name,
+            message: datastore
+              ? `${datastore} ${label} is published to all interfaces (0.0.0.0)`
+              : `Published ${label} is bound to all interfaces (0.0.0.0)`,
+            fix: `Bind to a specific host, e.g. "127.0.0.1:${bind}:${bind}", or put it behind a reverse proxy`,
+          };
+        }),
+  },
+  {
+    id: "HL006",
+    check: (s): Finding[] =>
+      s.networkMode === "host"
+        ? [
+            {
+              rule: "HL006",
+              severity: "medium",
+              service: s.name,
+              message:
+                "Uses host network mode (no network isolation from the host)",
+              fix: "Use a bridge network and publish only the ports you need",
+            },
+          ]
+        : [],
+  },
+  {
+    id: "HL007",
+    check: (s): Finding[] =>
+      s.volumes.flatMap((v): Finding[] => {
+        const source = v.source;
+        if (!source || !source.startsWith("/")) return [];
+        if (source === "/var/run/docker.sock") return [];
+        if (source === "/")
+          return [
+            {
+              rule: "HL007",
+              severity: "high",
+              service: s.name,
+              message: `Mounts the entire host filesystem at ${v.target ?? "/"}`,
+              fix: "Mount only the specific directory the service needs",
+            },
+          ];
+        if (BENIGN_MOUNTS.has(source)) return [];
+        const hit = SENSITIVE_ROOTS.find(
+          (r) => source === r || source.startsWith(`${r}/`),
+        );
+        if (hit && !v.readOnly)
+          return [
+            {
+              rule: "HL007",
+              severity: "medium",
+              service: s.name,
+              message: `Writable mount of sensitive host path: ${source}`,
+              fix: "Mount it read-only (`:ro`) or scope it to a subdirectory the service owns",
+            },
+          ];
+        return [];
+      }),
+  },
+  {
+    id: "HL008",
+    check: (s): Finding[] =>
+      s.hasRestartPolicy
+        ? []
+        : [
+            {
+              rule: "HL008",
+              severity: "low",
+              service: s.name,
+              message:
+                "No restart policy (won't come back after a crash or host reboot)",
+              fix: "Add `restart: unless-stopped`",
+            },
+          ],
+  },
+  {
+    id: "HL009",
+    check: (s): Finding[] => {
+      if (s.buildsLocally || !s.image) return [];
+      const tag = imageTag(s.image);
+      if (tag === undefined)
+        return [
+          {
+            rule: "HL009",
+            severity: "low",
+            service: s.name,
+            message: `Image is untagged (implicitly :latest): ${s.image}`,
+            fix: "Pin a specific version tag for reproducible deploys",
+          },
+        ];
+      if (tag === "latest")
+        return [
+          {
+            rule: "HL009",
+            severity: "low",
+            service: s.name,
+            message: `Image uses the :latest tag: ${s.image}`,
+            fix: "Pin a specific version tag so updates are intentional",
+          },
+        ];
+      return [];
+    },
+  },
+];

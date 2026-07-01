@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: supersecret123
+
+  cache:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  app:
+    image: myapp
+    privileged: true
+    network_mode: host
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc:/host-etc
+    ports:
+      - "8080:80"
+
+  proxy:
+    image: nginx:1.27
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:80"
