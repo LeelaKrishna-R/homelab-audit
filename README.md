@@ -1,5 +1,7 @@
 # homelab-audit
 
+[![CI](https://github.com/LeelaKrishna-R/homelab-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/LeelaKrishna-R/homelab-audit/actions/workflows/ci.yml)
+
 A small CLI that reads a `docker-compose.yml` and flags common security and
 reliability foot-guns before they bite you. It is a linter for your self-hosted
 stack: no Docker daemon, no network, no telemetry. It reads the file and prints
