@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { parse } from "yaml";
+import { isMap, isScalar, parseDocument } from "yaml";
 import type { ComposeFile, EnvVar, Port, Service, Volume } from "./types.ts";
 
 export function loadCompose(path: string): ComposeFile {
@@ -7,15 +7,53 @@ export function loadCompose(path: string): ComposeFile {
 }
 
 export function parseCompose(text: string, path = "compose"): ComposeFile {
-  const doc = parse(text) as unknown;
+  const document = parseDocument(text);
+  const doc = document.toJS() as unknown;
   const services: Service[] = [];
   const raw = isObject(doc) ? doc.services : undefined;
+  const ignores = ignoreComments(text, document);
   if (isObject(raw)) {
     for (const [name, value] of Object.entries(raw)) {
-      services.push(normalizeService(name, isObject(value) ? value : {}));
+      services.push({
+        ...normalizeService(name, isObject(value) ? value : {}),
+        ignore: ignores.get(name) ?? [],
+      });
     }
   }
   return { path, services };
+}
+
+const IGNORE = /#\s*homelab-audit:\s*ignore\s+((?:HL\d{3}[\s,]*)+)/gi;
+
+// Rules silenced per service by a `# homelab-audit: ignore HL001, HL005` comment in its block or on the lines
+// directly above its name. Comments are gone once the YAML is parsed, so this reads the text by node position.
+function ignoreComments(
+  text: string,
+  document: ReturnType<typeof parseDocument>,
+): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  const services = document.get("services", true);
+  if (!isMap(services)) return out;
+  for (const pair of services.items) {
+    if (!isScalar(pair.key) || !pair.key.range) continue;
+    let start = text.lastIndexOf("\n", pair.key.range[0] - 1) + 1;
+    while (start > 0) {
+      const prevStart = text.lastIndexOf("\n", start - 2) + 1;
+      if (!text.slice(prevStart, start).trim().startsWith("#")) break;
+      start = prevStart;
+    }
+    const valueRange = (
+      pair.value as { range?: [number, number, number] } | null
+    )?.range;
+    const end = valueRange ? valueRange[2] : pair.key.range[2];
+    const rules = new Set<string>();
+    for (const m of text.slice(start, end).matchAll(IGNORE)) {
+      for (const id of m[1].match(/HL\d{3}/gi) ?? [])
+        rules.add(id.toUpperCase());
+    }
+    if (rules.size) out.set(String(pair.key.value), [...rules].sort());
+  }
+  return out;
 }
 
 function isObject(v: unknown): v is Record<string, unknown> {

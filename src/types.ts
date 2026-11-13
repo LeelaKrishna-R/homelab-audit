@@ -44,6 +44,8 @@ export interface Service {
   networkMode?: string;
   restart?: string;
   hasRestartPolicy: boolean;
+  /** Rule ids silenced for this service by a `# homelab-audit: ignore …` comment. */
+  ignore?: string[];
 }
 
 export interface ComposeFile {

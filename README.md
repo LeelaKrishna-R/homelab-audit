@@ -64,6 +64,20 @@ or an exposed database fails the build:
 - run: npx homelab-audit docker-compose.yml --fail-on high
 ```
 
+### Ignoring a finding you've accepted
+
+Put a comment in the service's block, or on the line above its name:
+
+```yaml
+services:
+  # homelab-audit: ignore HL006   # needs host networking for DHCP
+  adguard:
+    image: adguard/adguardhome
+    network_mode: host
+```
+
+Only that service is affected, and only the rules you name.
+
 ## What it checks
 
 | ID | Severity | Check |
@@ -87,8 +101,8 @@ Kept deliberately small for v0.1. Likely next, roughly in order:
 
 - **Live mode** (`--live`): read actually-running containers via the Docker
   socket and audit real state, not just the declared file.
-- **Ignore / config**: a `.homelab-audit.yml` to silence a rule per service, plus
-  inline `# homelab-audit: ignore HL005` comments.
+- **Ignore file**: a `.homelab-audit.yml` to silence rules without touching the
+  compose file (inline `# homelab-audit: ignore` comments already work).
 - **More rules, opt-in**: missing healthcheck, no memory/CPU limits, `:latest` on
   `build` images. These fire on almost every service, so they will be opt-in to
   keep the default output sharp.
