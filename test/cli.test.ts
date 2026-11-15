@@ -63,3 +63,37 @@ test("main returns 2 when the file is missing", () => {
     2,
   );
 });
+
+test("--ignore leaves out the rules you've accepted, repeatable or comma-separated", () => {
+  assert.deepEqual(
+    parseFlags(["--ignore", "hl009,HL008", "--ignore", " HL008 "]).ignore,
+    ["HL008", "HL009"],
+  );
+  const lines: string[] = [];
+  const log = console.log;
+  console.log = (s: string) => lines.push(s);
+  try {
+    main([
+      fixture("insecure.yml"),
+      "--json",
+      "--ignore",
+      "HL001,HL002,HL003,HL004,HL005,HL006,HL007",
+    ]);
+  } finally {
+    console.log = log;
+  }
+  const [report] = JSON.parse(lines.join("\n"));
+  assert.ok(
+    report.findings.every((f: { rule: string }) =>
+      ["HL008", "HL009"].includes(f.rule),
+    ),
+  );
+  assert.deepEqual(report.ignored.length, 7);
+});
+
+test("--ignore with a rule that doesn't exist is a usage error", () => {
+  assert.equal(
+    silent(() => main([fixture("insecure.yml"), "--ignore", "HL099"])),
+    2,
+  );
+});

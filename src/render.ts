@@ -20,6 +20,7 @@ export function renderReport(
   path: string,
   findings: Finding[],
   color: boolean,
+  ignored: string[] = [],
 ): string {
   const paint = (code: string) => (color ? code : "");
   const lines: string[] = [
@@ -27,8 +28,10 @@ export function renderReport(
     "",
   ];
 
+  const ignoredLine = `  ${paint(COLOR.dim)}ignored (--ignore): ${ignored.join(", ")}${paint(COLOR.reset)}`;
   if (findings.length === 0) {
     lines.push("  No issues found.");
+    if (ignored.length) lines.push(ignoredLine);
     return lines.join("\n");
   }
 
@@ -42,5 +45,6 @@ export function renderReport(
 
   const n = countBySeverity(findings);
   lines.push("", `  ${n.high} high, ${n.medium} medium, ${n.low} low`);
+  if (ignored.length) lines.push(ignoredLine);
   return lines.join("\n");
 }

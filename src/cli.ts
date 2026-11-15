@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { auditCompose, countBySeverity } from "./audit.ts";
 import { parseCompose } from "./load.ts";
 import { renderReport } from "./render.ts";
+import { rules } from "./rules.ts";
 import { SEVERITY_ORDER } from "./types.ts";
 import type { Finding, Severity } from "./types.ts";
 
@@ -11,6 +12,7 @@ const VERSION = "homelab-audit 0.1.0";
 
 const USAGE = [
   "usage: homelab-audit [compose-file...] [--json] [--fail-on high|medium|low|none] [--no-color]",
+  "                     [--ignore HL008,HL009]",
   "",
   "Audits docker-compose files for common security and reliability foot-guns.",
   "Defaults to a compose file in the current directory when none is given.",
@@ -29,6 +31,7 @@ export interface Flags {
   json: boolean;
   failOn: Severity | "none";
   noColor: boolean;
+  ignore: string[];
   help: boolean;
   version: boolean;
 }
@@ -38,6 +41,7 @@ export function parseFlags(args: string[]): Flags {
   let json = false;
   let failOn: Severity | "none" = "high";
   let noColor = false;
+  const ignore = new Set<string>();
   let help = false;
   let version = false;
   for (let i = 0; i < args.length; i++) {
@@ -46,13 +50,24 @@ export function parseFlags(args: string[]): Flags {
     else if (a === "--no-color") noColor = true;
     else if (a === "--help" || a === "-h") help = true;
     else if (a === "--version" || a === "-v") version = true;
-    else if (a === "--fail-on") {
+    else if (a === "--ignore") {
+      for (const id of (args[++i] ?? "").split(","))
+        if (id.trim()) ignore.add(id.trim().toUpperCase());
+    } else if (a === "--fail-on") {
       const v = args[++i];
       if (v === "high" || v === "medium" || v === "low" || v === "none")
         failOn = v;
     } else paths.push(a);
   }
-  return { paths, json, failOn, noColor, help, version };
+  return {
+    paths,
+    json,
+    failOn,
+    noColor,
+    ignore: [...ignore].sort(),
+    help,
+    version,
+  };
 }
 
 function discoverDefault(): string[] {
@@ -69,6 +84,15 @@ export function main(argv: string[]): number {
   if (flags.version) {
     console.log(VERSION);
     return 0;
+  }
+
+  const ids = rules.map((r) => r.id);
+  const unknown = flags.ignore.filter((id) => !ids.includes(id));
+  if (unknown.length > 0) {
+    console.error(
+      `unknown rule ${unknown.join(", ")} (rules are ${ids[0]}..${ids[ids.length - 1]})`,
+    );
+    return 2;
   }
 
   const paths = flags.paths.length > 0 ? flags.paths : discoverDefault();
@@ -90,7 +114,11 @@ export function main(argv: string[]): number {
       return 2;
     }
     try {
-      reports.push({ path, findings: auditCompose(parseCompose(text, path)) });
+      const findings = auditCompose(parseCompose(text, path));
+      reports.push({
+        path,
+        findings: findings.filter((f) => !flags.ignore.includes(f.rule)),
+      });
     } catch (err) {
       console.error(
         `cannot parse ${path}: ${err instanceof Error ? err.message : String(err)}`,
@@ -106,11 +134,14 @@ export function main(argv: string[]): number {
       path: r.path,
       summary: countBySeverity(r.findings),
       findings: r.findings,
+      ignored: flags.ignore,
     }));
     console.log(JSON.stringify(payload, null, 2));
   } else {
     console.log(
-      reports.map((r) => renderReport(r.path, r.findings, color)).join("\n\n"),
+      reports
+        .map((r) => renderReport(r.path, r.findings, color, flags.ignore))
+        .join("\n\n"),
     );
   }
 

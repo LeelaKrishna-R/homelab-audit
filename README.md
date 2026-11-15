@@ -45,6 +45,7 @@ npx homelab-audit path/to/compose.yml   # audit a specific file
 npx homelab-audit a.yml b.yml           # audit several files
 npx homelab-audit --json                # machine-readable output
 npx homelab-audit --fail-on medium      # exit non-zero on medium+ (for CI)
+npx homelab-audit --ignore HL008,HL009  # leave out rules you've accepted, for every service
 ```
 
 Requires Node 24+.
@@ -78,6 +79,10 @@ services:
 
 Only that service is affected, and only the rules you name.
 
+To leave a rule out everywhere, without touching the file, pass `--ignore` (repeat it or
+use commas). The report says which rules it left out, and an id that isn't a rule is a
+usage error rather than a silent no-op.
+
 ## What it checks
 
 | ID | Severity | Check |
@@ -101,8 +106,8 @@ Kept deliberately small for v0.1. Likely next, roughly in order:
 
 - **Live mode** (`--live`): read actually-running containers via the Docker
   socket and audit real state, not just the declared file.
-- **Ignore file**: a `.homelab-audit.yml` to silence rules without touching the
-  compose file (inline `# homelab-audit: ignore` comments already work).
+- **Ignore file**: a `.homelab-audit.yml` for the rules you `--ignore` every time
+  (inline `# homelab-audit: ignore` comments and `--ignore` already work).
 - **More rules, opt-in**: missing healthcheck, no memory/CPU limits, `:latest` on
   `build` images. These fire on almost every service, so they will be opt-in to
   keep the default output sharp.
