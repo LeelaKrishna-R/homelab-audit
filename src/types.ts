@@ -40,6 +40,8 @@ export interface Service {
   env: EnvVar[];
   volumes: Volume[];
   capAdd: string[];
+  /** `security_opt:` entries, as written. */
+  securityOpt: string[];
   privileged: boolean;
   networkMode?: string;
   restart?: string;

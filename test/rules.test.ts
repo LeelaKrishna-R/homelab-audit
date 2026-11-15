@@ -125,3 +125,28 @@ test("HL011 (opt-in): a service with no memory limit is flagged only with strict
     ["web"],
   );
 });
+
+test("HL012: security_opt that turns off seccomp, AppArmor or SELinux labels", () => {
+  const yaml = `services:
+  a:
+    image: nginx:1.27
+    security_opt:
+      - seccomp:unconfined
+      - no-new-privileges:true
+  b:
+    image: nginx:1.27
+    security_opt: ["apparmor=unconfined", "label:disable"]
+  c:
+    image: nginx:1.27
+    security_opt:
+      - no-new-privileges:true
+`;
+  const found = auditCompose(parseCompose(yaml)).filter(
+    (f) => f.rule === "HL012",
+  );
+  assert.deepEqual(
+    found.map((f) => f.service),
+    ["a", "b", "b"],
+  );
+  assert.ok(found.every((f) => f.severity === "medium"));
+});

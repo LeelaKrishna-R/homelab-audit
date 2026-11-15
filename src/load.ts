@@ -74,6 +74,7 @@ function normalizeService(name: string, s: Record<string, unknown>): Service {
     env: normalizeEnv(s.environment),
     volumes: normalizeVolumes(s.volumes),
     capAdd: normalizeStringList(s.cap_add),
+    securityOpt: normalizeStringList(s.security_opt),
     privileged: s.privileged === true,
     networkMode:
       typeof s.network_mode === "string" ? s.network_mode : undefined,

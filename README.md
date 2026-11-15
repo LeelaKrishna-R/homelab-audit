@@ -107,6 +107,7 @@ usage error rather than a silent no-op.
 | HL009 | low | Image uses `:latest` or is untagged |
 | HL010 | low | No `healthcheck:` in the compose file (opt-in: `--strict`) |
 | HL011 | low | No memory limit (opt-in: `--strict`) |
+| HL012 | medium | `security_opt` turns off seccomp, AppArmor or SELinux labels (`seccomp:unconfined`, …) |
 
 Findings are advice, not gospel. A reverse proxy is supposed to publish 80/443
 to the world; `homelab-audit` still lists it so you can confirm it is intentional.

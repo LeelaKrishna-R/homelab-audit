@@ -256,4 +256,21 @@ export const rules: Rule[] = [
             },
           ],
   },
+  {
+    id: "HL012",
+    check: (s): Finding[] =>
+      s.securityOpt
+        .filter((o) =>
+          /^(seccomp|apparmor)\s*[:=]\s*unconfined$|^label\s*[:=]\s*disable$/i.test(
+            o.trim(),
+          ),
+        )
+        .map((o) => ({
+          rule: "HL012",
+          severity: "medium",
+          service: s.name,
+          message: `\`security_opt: ${o.trim()}\` turns off a kernel guard the container runtime applies by default`,
+          fix: "Remove it; if one syscall or path is the problem, allow just that with a custom profile",
+        })),
+  },
 ];
