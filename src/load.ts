@@ -80,6 +80,7 @@ function normalizeService(name: string, s: Record<string, unknown>): Service {
     restart,
     hasRestartPolicy,
     hasHealthcheck: runsHealthcheck(s.healthcheck),
+    hasMemoryLimit: hasMemoryLimit(s, deploy),
   };
 }
 
@@ -185,4 +186,20 @@ function runsHealthcheck(h: unknown): boolean {
   if (Array.isArray(test))
     return !(test.length > 0 && String(test[0]).toUpperCase() === "NONE");
   return typeof test === "string" ? test.trim() !== "" : false;
+}
+
+function hasMemoryLimit(
+  s: Record<string, unknown>,
+  deploy: Record<string, unknown>,
+): boolean {
+  if (
+    s.mem_limit !== undefined &&
+    s.mem_limit !== null &&
+    s.mem_limit !== 0 &&
+    s.mem_limit !== "0"
+  )
+    return true;
+  const resources = isObject(deploy.resources) ? deploy.resources : {};
+  const limits = isObject(resources.limits) ? resources.limits : {};
+  return limits.memory !== undefined && limits.memory !== null;
 }

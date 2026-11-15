@@ -239,4 +239,21 @@ export const rules: Rule[] = [
             },
           ],
   },
+  {
+    id: "HL011",
+    optIn: true,
+    check: (s): Finding[] =>
+      s.hasMemoryLimit
+        ? []
+        : [
+            {
+              rule: "HL011",
+              severity: "low",
+              service: s.name,
+              message:
+                "No memory limit (a leak can take the whole host's memory)",
+              fix: "Set `mem_limit:` (or `deploy.resources.limits.memory`) to what it needs plus headroom",
+            },
+          ],
+  },
 ];

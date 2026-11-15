@@ -46,6 +46,8 @@ export interface Service {
   hasRestartPolicy: boolean;
   /** A `healthcheck:` that runs (not `disable: true`, not `test: ["NONE"]`). The image may still define one. */
   hasHealthcheck: boolean;
+  /** `mem_limit:` or `deploy.resources.limits.memory`. */
+  hasMemoryLimit: boolean;
   /** Rule ids silenced for this service by a `# homelab-audit: ignore …` comment. */
   ignore?: string[];
 }

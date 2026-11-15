@@ -100,3 +100,28 @@ test("HL010 (opt-in): a service with no healthcheck is flagged only with strict"
   ]);
   assert.ok(strict.every((f) => f.severity === "low"));
 });
+
+test("HL011 (opt-in): a service with no memory limit is flagged only with strict", () => {
+  const yaml = `services:
+  web:
+    image: nginx:1.27
+  db:
+    image: postgres:16
+    mem_limit: 512m
+  api:
+    image: node:22
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+`;
+  const file = parseCompose(yaml);
+  assert.ok(auditCompose(file).every((f) => f.rule !== "HL011"));
+  const strict = auditCompose(file, { strict: true }).filter(
+    (f) => f.rule === "HL011",
+  );
+  assert.deepEqual(
+    strict.map((f) => f.service),
+    ["web"],
+  );
+});
