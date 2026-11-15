@@ -79,6 +79,7 @@ function normalizeService(name: string, s: Record<string, unknown>): Service {
       typeof s.network_mode === "string" ? s.network_mode : undefined,
     restart,
     hasRestartPolicy,
+    hasHealthcheck: runsHealthcheck(s.healthcheck),
   };
 }
 
@@ -176,4 +177,12 @@ function parseVolumeString(s: string): Volume {
     target: parts[1],
     readOnly: /(^|,)ro(,|$)/.test(mode),
   };
+}
+
+function runsHealthcheck(h: unknown): boolean {
+  if (!isObject(h) || h.disable === true) return false;
+  const test = h.test;
+  if (Array.isArray(test))
+    return !(test.length > 0 && String(test[0]).toUpperCase() === "NONE");
+  return typeof test === "string" ? test.trim() !== "" : false;
 }

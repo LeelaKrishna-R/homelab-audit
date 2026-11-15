@@ -70,3 +70,33 @@ test("countBySeverity tallies every finding exactly once", () => {
   assert.equal(n.high + n.medium + n.low, f.length);
   assert.ok(n.high >= 3);
 });
+
+test("HL010 (opt-in): a service with no healthcheck is flagged only with strict", () => {
+  const yaml = `services:
+  web:
+    image: nginx:1.27
+  db:
+    image: postgres:16
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+  worker:
+    image: busybox:1.36
+    healthcheck:
+      disable: true
+  off:
+    image: busybox:1.36
+    healthcheck:
+      test: ["NONE"]
+`;
+  const file = parseCompose(yaml);
+  assert.ok(auditCompose(file).every((f) => f.rule !== "HL010"));
+  const strict = auditCompose(file, { strict: true }).filter(
+    (f) => f.rule === "HL010",
+  );
+  assert.deepEqual(strict.map((f) => f.service).sort(), [
+    "off",
+    "web",
+    "worker",
+  ]);
+  assert.ok(strict.every((f) => f.severity === "low"));
+});

@@ -12,7 +12,7 @@ const VERSION = "homelab-audit 0.1.0";
 
 const USAGE = [
   "usage: homelab-audit [compose-file...] [--json] [--fail-on high|medium|low|none] [--no-color]",
-  "                     [--ignore HL008,HL009]",
+  "                     [--ignore HL008,HL009] [--strict]",
   "",
   "Audits docker-compose files for common security and reliability foot-guns.",
   "Defaults to a compose file in the current directory when none is given.",
@@ -32,6 +32,7 @@ export interface Flags {
   failOn: Severity | "none";
   noColor: boolean;
   ignore: string[];
+  strict: boolean;
   help: boolean;
   version: boolean;
 }
@@ -42,12 +43,14 @@ export function parseFlags(args: string[]): Flags {
   let failOn: Severity | "none" = "high";
   let noColor = false;
   const ignore = new Set<string>();
+  let strict = false;
   let help = false;
   let version = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === "--json") json = true;
     else if (a === "--no-color") noColor = true;
+    else if (a === "--strict") strict = true;
     else if (a === "--help" || a === "-h") help = true;
     else if (a === "--version" || a === "-v") version = true;
     else if (a === "--ignore") {
@@ -65,6 +68,7 @@ export function parseFlags(args: string[]): Flags {
     failOn,
     noColor,
     ignore: [...ignore].sort(),
+    strict,
     help,
     version,
   };
@@ -114,7 +118,9 @@ export function main(argv: string[]): number {
       return 2;
     }
     try {
-      const findings = auditCompose(parseCompose(text, path));
+      const findings = auditCompose(parseCompose(text, path), {
+        strict: flags.strict,
+      });
       reports.push({
         path,
         findings: findings.filter((f) => !flags.ignore.includes(f.rule)),

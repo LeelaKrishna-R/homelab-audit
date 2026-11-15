@@ -44,6 +44,8 @@ export interface Service {
   networkMode?: string;
   restart?: string;
   hasRestartPolicy: boolean;
+  /** A `healthcheck:` that runs (not `disable: true`, not `test: ["NONE"]`). The image may still define one. */
+  hasHealthcheck: boolean;
   /** Rule ids silenced for this service by a `# homelab-audit: ignore …` comment. */
   ignore?: string[];
 }
@@ -55,5 +57,7 @@ export interface ComposeFile {
 
 export interface Rule {
   id: string;
+  /** Fires on most services, so it runs only with --strict. */
+  optIn?: boolean;
   check(service: Service): Finding[];
 }

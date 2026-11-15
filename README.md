@@ -46,6 +46,7 @@ npx homelab-audit a.yml b.yml           # audit several files
 npx homelab-audit --json                # machine-readable output
 npx homelab-audit --fail-on medium      # exit non-zero on medium+ (for CI)
 npx homelab-audit --ignore HL008,HL009  # leave out rules you've accepted, for every service
+npx homelab-audit --strict              # also the opt-in rules that fire on most services
 ```
 
 Requires Node 24+.
@@ -96,6 +97,7 @@ usage error rather than a silent no-op.
 | HL007 | high / med | Mounts `/` (high) or a writable sensitive host path like `/etc`, `/root` (medium) |
 | HL008 | low | No restart policy (won't survive a crash or reboot) |
 | HL009 | low | Image uses `:latest` or is untagged |
+| HL010 | low | No `healthcheck:` in the compose file (opt-in: `--strict`) |
 
 Findings are advice, not gospel. A reverse proxy is supposed to publish 80/443
 to the world; `homelab-audit` still lists it so you can confirm it is intentional.
@@ -108,9 +110,9 @@ Kept deliberately small for v0.1. Likely next, roughly in order:
   socket and audit real state, not just the declared file.
 - **Ignore file**: a `.homelab-audit.yml` for the rules you `--ignore` every time
   (inline `# homelab-audit: ignore` comments and `--ignore` already work).
-- **More rules, opt-in**: missing healthcheck, no memory/CPU limits, `:latest` on
-  `build` images. These fire on almost every service, so they will be opt-in to
-  keep the default output sharp.
+- **More opt-in rules** (behind `--strict`, like the missing-healthcheck check):
+  no memory/CPU limits, `:latest` on `build` images. They fire on almost every
+  service, so they stay out of the default output.
 - **Container image**: `docker run ghcr.io/…/homelab-audit` so people can run it
   with Docker alone, no Node required.
 

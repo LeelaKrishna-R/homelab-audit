@@ -222,4 +222,21 @@ export const rules: Rule[] = [
       return [];
     },
   },
+  {
+    id: "HL010",
+    optIn: true,
+    check: (s): Finding[] =>
+      s.hasHealthcheck
+        ? []
+        : [
+            {
+              rule: "HL010",
+              severity: "low",
+              service: s.name,
+              message:
+                "No healthcheck in the compose file (the image may define one)",
+              fix: "Add a `healthcheck:` so Docker knows when it is actually ready, not just running",
+            },
+          ],
+  },
 ];

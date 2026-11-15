@@ -97,3 +97,8 @@ test("--ignore with a rule that doesn't exist is a usage error", () => {
     2,
   );
 });
+
+test("--strict turns on the opt-in rules", () => {
+  assert.equal(parseFlags(["--strict"]).strict, true);
+  assert.equal(parseFlags([]).strict, false);
+});
