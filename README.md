@@ -7,24 +7,32 @@ reliability foot-guns before they bite you. It is a linter for your self-hosted
 stack: no Docker daemon, no network, no telemetry. It reads the file and prints
 a prioritized list of problems with a concrete fix for each.
 
+![homelab-audit flags a privileged container, a password in the file, a database open on 0.0.0.0, host networking and a :latest tag](docs/demo.svg)
+
+A real run on [`docs/demo/docker-compose.yml`](docs/demo/docker-compose.yml). Write-up: [ravuri.dev/work/homelab-audit](https://www.ravuri.dev/work/homelab-audit).
+
+<details>
+<summary>The same run as text</summary>
+
 ```
-$ npx homelab-audit docker-compose.yml
+$ npx homelab-audit docs/demo/docker-compose.yml
+homelab-audit  docs/demo/docker-compose.yml
 
-homelab-audit  docker-compose.yml
-
-  [HIGH] db     PostgreSQL port 5432 is published to all interfaces (0.0.0.0)
-         -> Bind to a specific host, e.g. "127.0.0.1:5432:5432", or put it behind a reverse proxy
-  [HIGH] db     Hardcoded secret in environment: POSTGRES_PASSWORD
-         -> Move it to a git-ignored `.env` file, Docker secrets, or a `${VAR}` reference from the host env
-  [HIGH] app    Runs in privileged mode (full access to host devices)
+  [HIGH] app  Runs in privileged mode (full access to host devices)
          -> Remove `privileged: true`; grant only the specific `cap_add` it needs
-  [MED ] app    Uses host network mode (no network isolation from the host)
+  [HIGH] db  Hardcoded secret in environment: POSTGRES_PASSWORD
+         -> Move it to a git-ignored `.env` file, Docker secrets, or a `${VAR}` reference from the host env
+  [HIGH] db  PostgreSQL port 5432 is published to all interfaces (0.0.0.0)
+         -> Bind to a specific host, e.g. "127.0.0.1:5432:5432", or put it behind a reverse proxy
+  [MED ] app  Uses host network mode (no network isolation from the host)
          -> Use a bridge network and publish only the ports you need
   [LOW ] cache  Image uses the :latest tag: redis:latest
          -> Pin a specific version tag so updates are intentional
 
   3 high, 1 medium, 1 low
 ```
+
+</details>
 
 ## Why
 

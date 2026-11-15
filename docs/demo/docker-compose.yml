@@ -1,0 +1,20 @@
+# The file the README demo audits: a small stack with the usual mistakes.
+#   node src/cli.ts docs/demo/docker-compose.yml
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: hunter2
+
+  app:
+    image: ghcr.io/example/app:1.4
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+
+  cache:
+    image: redis:latest
+    restart: unless-stopped
