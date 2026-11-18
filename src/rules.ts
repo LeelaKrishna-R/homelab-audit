@@ -26,6 +26,9 @@ const HIGH_CAPS = /^(SYS_ADMIN|ALL|SYS_MODULE)$/i;
 const SENSITIVE_ROOTS = ["/etc", "/root", "/var/run", "/proc", "/sys", "/boot"];
 const BENIGN_MOUNTS = new Set(["/etc/localtime", "/etc/timezone"]);
 
+// /var/run is a symlink to /run on current distros, so both paths are the same socket.
+const DOCKER_SOCKETS = new Set(["/var/run/docker.sock", "/run/docker.sock"]);
+
 const isWildcard = (hostIp: string | undefined): boolean =>
   hostIp === undefined || WILDCARD_IPS.has(hostIp);
 
@@ -62,7 +65,7 @@ export const rules: Rule[] = [
     id: "HL002",
     check: (s): Finding[] =>
       s.volumes
-        .filter((v) => v.source === "/var/run/docker.sock")
+        .filter((v) => v.source !== undefined && DOCKER_SOCKETS.has(v.source))
         .map((): Finding => ({
           rule: "HL002",
           severity: "high",
@@ -150,7 +153,7 @@ export const rules: Rule[] = [
       s.volumes.flatMap((v): Finding[] => {
         const source = v.source;
         if (!source || !source.startsWith("/")) return [];
-        if (source === "/var/run/docker.sock") return [];
+        if (DOCKER_SOCKETS.has(source)) return [];
         if (source === "/")
           return [
             {

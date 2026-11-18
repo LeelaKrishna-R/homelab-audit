@@ -97,7 +97,7 @@ usage error rather than a silent no-op.
 | ID | Severity | Check |
 |----|----------|-------|
 | HL001 | high | Container runs `privileged: true` |
-| HL002 | high | Mounts the Docker socket (`/var/run/docker.sock`) |
+| HL002 | high | Mounts the Docker socket (`/var/run/docker.sock` or `/run/docker.sock`) |
 | HL003 | high | Hardcoded secret in `environment:` (password/token/key with a literal value) |
 | HL004 | high / med | Dangerous `cap_add` (`SYS_ADMIN`, `ALL`, `SYS_MODULE` = high; others medium) |
 | HL005 | high / med | Port published to all interfaces (`0.0.0.0`); a known datastore port = high |

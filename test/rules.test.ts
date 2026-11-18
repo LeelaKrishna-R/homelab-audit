@@ -150,3 +150,30 @@ test("HL012: security_opt that turns off seccomp, AppArmor or SELinux labels", (
   );
   assert.ok(found.every((f) => f.severity === "medium"));
 });
+
+test("HL002: the Docker socket is caught under /run as well as /var/run", () => {
+  const yaml = `services:
+  a:
+    image: portainer/portainer-ce:2.21.0
+    volumes:
+      - /run/docker.sock:/var/run/docker.sock
+  b:
+    image: traefik:3.1
+    volumes:
+      - type: bind
+        source: /run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+  c:
+    image: nginx:1.27
+    volumes:
+      - /run/app/app.sock:/run/app.sock
+`;
+  const found = auditCompose(parseCompose(yaml)).filter(
+    (f) => f.rule === "HL002",
+  );
+  assert.deepEqual(
+    found.map((f) => f.service),
+    ["a", "b"],
+  );
+});
