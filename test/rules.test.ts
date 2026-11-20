@@ -177,3 +177,43 @@ test("HL002: the Docker socket is caught under /run as well as /var/run", () => 
     ["a", "b"],
   );
 });
+
+test("HL013 (opt-in): a service with no CPU limit is flagged only with strict", () => {
+  const yaml = `services:
+  web:
+    image: nginx:1.27
+  db:
+    image: postgres:16
+    cpus: 1.5
+  api:
+    image: node:22
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+  worker:
+    image: node:22
+    cpu_quota: 50000
+  unlimited:
+    image: redis:7
+    cpus: 0
+  weighted:
+    image: redis:7
+    cpu_shares: 512
+  templated:
+    image: redis:7
+    cpus: \${REDIS_CPUS}
+`;
+  const file = parseCompose(yaml);
+  assert.ok(auditCompose(file).every((f) => f.rule !== "HL013"));
+  const strict = auditCompose(file, { strict: true }).filter(
+    (f) => f.rule === "HL013",
+  );
+  // zero means "no limit" to Docker, and cpu_shares is a weight, not a cap
+  assert.deepEqual(strict.map((f) => f.service).sort(), [
+    "unlimited",
+    "web",
+    "weighted",
+  ]);
+  assert.ok(strict.every((f) => f.severity === "low"));
+});

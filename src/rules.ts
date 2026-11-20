@@ -276,4 +276,21 @@ export const rules: Rule[] = [
           fix: "Remove it; if one syscall or path is the problem, allow just that with a custom profile",
         })),
   },
+  {
+    id: "HL013",
+    optIn: true,
+    check: (s): Finding[] =>
+      s.hasCpuLimit
+        ? []
+        : [
+            {
+              rule: "HL013",
+              severity: "low",
+              service: s.name,
+              message:
+                "No CPU limit (a runaway loop can starve everything else on the host)",
+              fix: "Set `cpus:` (or `deploy.resources.limits.cpus`), e.g. `cpus: 1.5`",
+            },
+          ],
+  },
 ];

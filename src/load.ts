@@ -82,6 +82,7 @@ function normalizeService(name: string, s: Record<string, unknown>): Service {
     hasRestartPolicy,
     hasHealthcheck: runsHealthcheck(s.healthcheck),
     hasMemoryLimit: hasMemoryLimit(s, deploy),
+    hasCpuLimit: hasCpuLimit(s, deploy),
   };
 }
 
@@ -187,6 +188,21 @@ function runsHealthcheck(h: unknown): boolean {
   if (Array.isArray(test))
     return !(test.length > 0 && String(test[0]).toUpperCase() === "NONE");
   return typeof test === "string" ? test.trim() !== "" : false;
+}
+
+/** A CPU cap Docker enforces. `cpu_shares` is only a weight under contention, so it is not one. */
+function hasCpuLimit(
+  s: Record<string, unknown>,
+  deploy: Record<string, unknown>,
+): boolean {
+  const resources = isObject(deploy.resources) ? deploy.resources : {};
+  const limits = isObject(resources.limits) ? resources.limits : {};
+  return [s.cpus, s.cpu_quota, limits.cpus].some((v) => {
+    if (typeof v !== "number" && typeof v !== "string") return false;
+    const n = Number(v);
+    // an unresolved ${VAR} is taken as set: its value is the user's to give
+    return Number.isNaN(n) ? String(v).trim() !== "" : n > 0;
+  });
 }
 
 function hasMemoryLimit(

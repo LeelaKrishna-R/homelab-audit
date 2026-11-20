@@ -50,6 +50,8 @@ export interface Service {
   hasHealthcheck: boolean;
   /** `mem_limit:` or `deploy.resources.limits.memory`. */
   hasMemoryLimit: boolean;
+  /** `cpus:`, `cpu_quota:` or `deploy.resources.limits.cpus`, above zero (zero means no limit). */
+  hasCpuLimit: boolean;
   /** Rule ids silenced for this service by a `# homelab-audit: ignore …` comment. */
   ignore?: string[];
 }
