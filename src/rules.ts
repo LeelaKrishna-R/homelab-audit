@@ -293,4 +293,22 @@ export const rules: Rule[] = [
             },
           ],
   },
+  {
+    id: "HL014",
+    optIn: true,
+    check: (s): Finding[] => {
+      if (!s.buildsLocally || !s.image) return [];
+      const tag = imageTag(s.image);
+      if (tag !== undefined && tag !== "latest") return [];
+      return [
+        {
+          rule: "HL014",
+          severity: "low",
+          service: s.name,
+          message: `Built locally and tagged ${tag === undefined ? "with no tag (implicitly :latest)" : ":latest"}: ${s.image}`,
+          fix: "Tag each build with a version (`image: myapp:1.4.2`) so you can roll back to the last good one",
+        },
+      ];
+    },
+  },
 ];

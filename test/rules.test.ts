@@ -217,3 +217,29 @@ test("HL013 (opt-in): a service with no CPU limit is flagged only with strict", 
   ]);
   assert.ok(strict.every((f) => f.severity === "low"));
 });
+
+test("HL014 (opt-in): a locally built image tagged :latest or untagged is flagged only with strict", () => {
+  const yaml = `services:
+  app:
+    build: .
+    image: myapp:latest
+  worker:
+    build: ./worker
+    image: myworker
+  api:
+    build: ./api
+    image: myapi:1.4.2
+  plain:
+    build: ./plain
+  pulled:
+    image: redis:latest
+`;
+  const file = parseCompose(yaml);
+  assert.ok(auditCompose(file).every((f) => f.rule !== "HL014"));
+  const strict = auditCompose(file, { strict: true }).filter(
+    (f) => f.rule === "HL014",
+  );
+  // a pulled :latest is HL009's; a build with no image: line names nothing to pin
+  assert.deepEqual(strict.map((f) => f.service).sort(), ["app", "worker"]);
+  assert.ok(strict.every((f) => f.severity === "low"));
+});

@@ -109,6 +109,7 @@ usage error rather than a silent no-op.
 | HL011 | low | No memory limit (opt-in: `--strict`) |
 | HL012 | medium | `security_opt` turns off seccomp, AppArmor or SELinux labels (`seccomp:unconfined`, …) |
 | HL013 | low | No CPU limit (opt-in: `--strict`) |
+| HL014 | low | Built locally (`build:`) and tagged `:latest` or untagged (opt-in: `--strict`) |
 
 Findings are advice, not gospel. A reverse proxy is supposed to publish 80/443
 to the world; `homelab-audit` still lists it so you can confirm it is intentional.
@@ -121,9 +122,8 @@ Kept deliberately small for v0.1. Likely next, roughly in order:
   socket and audit real state, not just the declared file.
 - **Ignore file**: a `.homelab-audit.yml` for the rules you `--ignore` every time
   (inline `# homelab-audit: ignore` comments and `--ignore` already work).
-- **More opt-in rules** (behind `--strict`, like the missing-healthcheck check):
-  `:latest` on `build` images. They fire on almost every
-  service, so they stay out of the default output.
+- **More opt-in rules** (behind `--strict`, like HL010, HL011, HL013 and HL014): checks
+  that would fire on almost every service, so they stay out of the default output.
 - **Container image**: `docker run ghcr.io/…/homelab-audit` so people can run it
   with Docker alone, no Node required.
 
