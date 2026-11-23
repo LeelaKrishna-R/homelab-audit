@@ -269,3 +269,35 @@ test("HL015: pid: host is high, ipc: host is medium, sharing with one container 
     ],
   );
 });
+
+test("HL016: raw memory devices are high, whole disks medium, GPU and USB nodes clean", () => {
+  const yaml = `services:
+  mem:
+    image: tool:1.0
+    restart: unless-stopped
+    devices:
+      - /dev/mem:/dev/mem
+  disk:
+    image: backup:2.1
+    restart: unless-stopped
+    devices:
+      - "/dev/sdb:/dev/sdb:r"
+      - source: /dev/nvme0n1p2
+        target: /dev/data
+  media:
+    image: jellyfin/jellyfin:10.9.0
+    restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/ttyUSB0
+`;
+  const f = auditCompose(parseCompose(yaml)).filter((x) => x.rule === "HL016");
+  assert.deepEqual(
+    f.map((x) => [x.service, x.severity]),
+    [
+      ["mem", "high"],
+      ["disk", "medium"],
+      ["disk", "medium"],
+    ],
+  );
+});

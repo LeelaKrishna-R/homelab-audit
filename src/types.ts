@@ -47,6 +47,8 @@ export interface Service {
   /** `pid:` and `ipc:` as written ("host", "service:db", …). */
   pidMode?: string;
   ipcMode?: string;
+  /** Host paths of `devices:` entries (`/dev/sda:/dev/sda:r` → `/dev/sda`). */
+  devices: string[];
   restart?: string;
   hasRestartPolicy: boolean;
   /** A `healthcheck:` that runs (not `disable: true`, not `test: ["NONE"]`). The image may still define one. */

@@ -179,6 +179,39 @@ export const rules: Rule[] = [
     ],
   },
   {
+    // /dev/mem, /dev/kmem and /dev/port are raw host memory and I/O ports; a whole disk or partition lets the
+    // container read every file on it regardless of permissions. GPU and USB nodes (/dev/dri, /dev/ttyUSB0) are fine.
+    id: "HL016",
+    check: (s): Finding[] =>
+      s.devices.flatMap((d): Finding[] => {
+        if (/^\/dev\/(?:mem|kmem|port)$/.test(d))
+          return [
+            {
+              rule: "HL016",
+              severity: "high",
+              service: s.name,
+              message: `Passes the host's raw memory device into the container: ${d}`,
+              fix: `Remove ${d} from devices:; nothing in a container should need it`,
+            },
+          ];
+        if (
+          /^\/dev\/(?:sd[a-z]+\d*|hd[a-z]+\d*|vd[a-z]+\d*|xvd[a-z]+\d*|nvme\d+n\d+(?:p\d+)?|mmcblk\d+(?:p\d+)?|disk\/.+)$/.test(
+            d,
+          )
+        )
+          return [
+            {
+              rule: "HL016",
+              severity: "medium",
+              service: s.name,
+              message: `Passes a raw host disk into the container: ${d} (every file on it is readable)`,
+              fix: "Mount the directory it needs as a volume instead of the whole device",
+            },
+          ];
+        return [];
+      }),
+  },
+  {
     id: "HL007",
     check: (s): Finding[] =>
       s.volumes.flatMap((v): Finding[] => {

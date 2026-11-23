@@ -80,12 +80,28 @@ function normalizeService(name: string, s: Record<string, unknown>): Service {
       typeof s.network_mode === "string" ? s.network_mode : undefined,
     pidMode: typeof s.pid === "string" ? s.pid : undefined,
     ipcMode: typeof s.ipc === "string" ? s.ipc : undefined,
+    devices: normalizeDevices(s.devices),
     restart,
     hasRestartPolicy,
     hasHealthcheck: runsHealthcheck(s.healthcheck),
     hasMemoryLimit: hasMemoryLimit(s, deploy),
     hasCpuLimit: hasCpuLimit(s, deploy),
   };
+}
+
+// "HOST[:CONTAINER[:PERMS]]" strings, or the long form's { source }
+function normalizeDevices(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.flatMap((e): string[] => {
+    if (typeof e === "string") return [e.split(":")[0]];
+    if (
+      e &&
+      typeof e === "object" &&
+      typeof (e as { source?: unknown }).source === "string"
+    )
+      return [(e as { source: string }).source];
+    return [];
+  });
 }
 
 function normalizeStringList(v: unknown): string[] {
