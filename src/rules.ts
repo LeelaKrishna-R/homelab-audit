@@ -148,6 +148,37 @@ export const rules: Rule[] = [
         : [],
   },
   {
+    // pid: host lets the container see every process on the host and, as root, signal or ptrace them;
+    // ipc: host shares the host's shared memory and semaphores. "service:x" / "container:x" share with one container.
+    id: "HL015",
+    check: (s): Finding[] => [
+      ...(s.pidMode === "host"
+        ? [
+            {
+              rule: "HL015",
+              severity: "high" as const,
+              service: s.name,
+              message:
+                "Shares the host's process namespace (`pid: host`): it can see and signal every process on the host",
+              fix: 'Remove `pid: host`; to watch another container, use `pid: "service:<name>"` instead',
+            },
+          ]
+        : []),
+      ...(s.ipcMode === "host"
+        ? [
+            {
+              rule: "HL015",
+              severity: "medium" as const,
+              service: s.name,
+              message:
+                "Shares the host's IPC namespace (`ipc: host`): host shared memory and semaphores are readable",
+              fix: 'Remove `ipc: host`, or share with one container (`ipc: "service:<name>"`)',
+            },
+          ]
+        : []),
+    ],
+  },
+  {
     id: "HL007",
     check: (s): Finding[] =>
       s.volumes.flatMap((v): Finding[] => {

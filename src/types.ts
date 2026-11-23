@@ -44,6 +44,9 @@ export interface Service {
   securityOpt: string[];
   privileged: boolean;
   networkMode?: string;
+  /** `pid:` and `ipc:` as written ("host", "service:db", …). */
+  pidMode?: string;
+  ipcMode?: string;
   restart?: string;
   hasRestartPolicy: boolean;
   /** A `healthcheck:` that runs (not `disable: true`, not `test: ["NONE"]`). The image may still define one. */

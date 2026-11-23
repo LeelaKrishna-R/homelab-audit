@@ -243,3 +243,29 @@ test("HL014 (opt-in): a locally built image tagged :latest or untagged is flagge
   assert.deepEqual(strict.map((f) => f.service).sort(), ["app", "worker"]);
   assert.ok(strict.every((f) => f.severity === "low"));
 });
+
+test("HL015: pid: host is high, ipc: host is medium, sharing with one container is fine", () => {
+  const yaml = `services:
+  agent:
+    image: monitor:1.2
+    restart: unless-stopped
+    pid: host
+  shm:
+    image: app:2.0
+    restart: unless-stopped
+    ipc: host
+  sidecar:
+    image: debug:1.0
+    restart: unless-stopped
+    pid: "service:agent"
+    ipc: "service:agent"
+`;
+  const f = auditCompose(parseCompose(yaml)).filter((x) => x.rule === "HL015");
+  assert.deepEqual(
+    f.map((x) => [x.service, x.severity]),
+    [
+      ["agent", "high"],
+      ["shm", "medium"],
+    ],
+  );
+});

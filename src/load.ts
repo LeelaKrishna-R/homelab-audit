@@ -78,6 +78,8 @@ function normalizeService(name: string, s: Record<string, unknown>): Service {
     privileged: s.privileged === true,
     networkMode:
       typeof s.network_mode === "string" ? s.network_mode : undefined,
+    pidMode: typeof s.pid === "string" ? s.pid : undefined,
+    ipcMode: typeof s.ipc === "string" ? s.ipc : undefined,
     restart,
     hasRestartPolicy,
     hasHealthcheck: runsHealthcheck(s.healthcheck),

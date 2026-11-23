@@ -110,6 +110,7 @@ usage error rather than a silent no-op.
 | HL012 | medium | `security_opt` turns off seccomp, AppArmor or SELinux labels (`seccomp:unconfined`, …) |
 | HL013 | low | No CPU limit (opt-in: `--strict`) |
 | HL014 | low | Built locally (`build:`) and tagged `:latest` or untagged (opt-in: `--strict`) |
+| HL015 | high / med | Shares the host's process namespace (`pid: host`, high) or IPC namespace (`ipc: host`, medium) |
 
 Findings are advice, not gospel. A reverse proxy is supposed to publish 80/443
 to the world; `homelab-audit` still lists it so you can confirm it is intentional.
