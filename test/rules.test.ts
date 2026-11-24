@@ -318,3 +318,29 @@ test("HL017: userns_mode: host is flagged, anything else is not", () => {
     [["app", "medium"]],
   );
 });
+
+test("HL018 (opt-in): a service without no-new-privileges is flagged only with strict", () => {
+  const yaml = `services:
+  plain:
+    image: app:1.0
+  colon:
+    image: app:1.0
+    security_opt: ["no-new-privileges:true"]
+  equals:
+    image: app:1.0
+    security_opt: ["no-new-privileges=true"]
+  bare:
+    image: app:1.0
+    security_opt: ["no-new-privileges"]
+  off:
+    image: app:1.0
+    security_opt: ["no-new-privileges:false"]
+`;
+  const file = parseCompose(yaml);
+  assert.ok(auditCompose(file).every((f) => f.rule !== "HL018"));
+  const strict = auditCompose(file, { strict: true }).filter(
+    (f) => f.rule === "HL018",
+  );
+  assert.deepEqual(strict.map((f) => f.service).sort(), ["off", "plain"]);
+  assert.ok(strict.every((f) => f.severity === "low"));
+});

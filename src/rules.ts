@@ -376,6 +376,28 @@ export const rules: Rule[] = [
           ],
   },
   {
+    // Without no-new-privileges a setuid binary in the image (su, sudo, ping on old images) can still raise the
+    // process's privileges; with it, exec can never gain more than the process started with. Fires on most compose
+    // files, so it is opt-in like HL010/HL011/HL013.
+    id: "HL018",
+    optIn: true,
+    check: (s): Finding[] =>
+      s.securityOpt.some((o) =>
+        /^no-new-privileges(?:\s*[:=]\s*true)?$/i.test(o.trim()),
+      )
+        ? []
+        : [
+            {
+              rule: "HL018",
+              severity: "low",
+              service: s.name,
+              message:
+                "Processes can gain privileges through setuid binaries (no `no-new-privileges:true`)",
+              fix: 'Add `security_opt: ["no-new-privileges:true"]`',
+            },
+          ],
+  },
+  {
     id: "HL014",
     optIn: true,
     check: (s): Finding[] => {
