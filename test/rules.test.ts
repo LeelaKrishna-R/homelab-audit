@@ -301,3 +301,20 @@ test("HL016: raw memory devices are high, whole disks medium, GPU and USB nodes 
     ],
   );
 });
+
+test("HL017: userns_mode: host is flagged, anything else is not", () => {
+  const yaml = `services:
+  app:
+    image: app:1.0
+    restart: unless-stopped
+    userns_mode: host
+  other:
+    image: app:1.0
+    restart: unless-stopped
+`;
+  const f = auditCompose(parseCompose(yaml)).filter((x) => x.rule === "HL017");
+  assert.deepEqual(
+    f.map((x) => [x.service, x.severity]),
+    [["app", "medium"]],
+  );
+});

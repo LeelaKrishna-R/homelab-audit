@@ -112,6 +112,7 @@ usage error rather than a silent no-op.
 | HL014 | low | Built locally (`build:`) and tagged `:latest` or untagged (opt-in: `--strict`) |
 | HL015 | high / med | Shares the host's process namespace (`pid: host`, high) or IPC namespace (`ipc: host`, medium) |
 | HL016 | high / med | Passes a host device in: raw memory (`/dev/mem`, `/dev/kmem`, `/dev/port`, high) or a whole disk (`/dev/sda`, `/dev/nvme0n1`, medium) |
+| HL017 | medium | Opts out of the daemon's user-namespace remapping (`userns_mode: host`) |
 
 Findings are advice, not gospel. A reverse proxy is supposed to publish 80/443
 to the world; `homelab-audit` still lists it so you can confirm it is intentional.

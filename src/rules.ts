@@ -212,6 +212,24 @@ export const rules: Rule[] = [
       }),
   },
   {
+    // On a daemon set up with userns-remap, the container's root is an unprivileged host user; userns_mode: host
+    // opts this one service out, so its root is the host's root again (and a breakout lands as root).
+    id: "HL017",
+    check: (s): Finding[] =>
+      s.usernsMode === "host"
+        ? [
+            {
+              rule: "HL017",
+              severity: "medium",
+              service: s.name,
+              message:
+                "Opts out of user-namespace remapping (`userns_mode: host`): root in the container is root on the host",
+              fix: "Remove `userns_mode: host` so the daemon's userns-remap applies to this service too",
+            },
+          ]
+        : [],
+  },
+  {
     id: "HL007",
     check: (s): Finding[] =>
       s.volumes.flatMap((v): Finding[] => {

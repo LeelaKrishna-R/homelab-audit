@@ -49,6 +49,8 @@ export interface Service {
   ipcMode?: string;
   /** Host paths of `devices:` entries (`/dev/sda:/dev/sda:r` → `/dev/sda`). */
   devices: string[];
+  /** `userns_mode:` as written ("host" turns off the daemon's user-namespace remapping). */
+  usernsMode?: string;
   restart?: string;
   hasRestartPolicy: boolean;
   /** A `healthcheck:` that runs (not `disable: true`, not `test: ["NONE"]`). The image may still define one. */
