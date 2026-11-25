@@ -114,6 +114,7 @@ usage error rather than a silent no-op.
 | HL016 | high / med | Passes a host device in: raw memory (`/dev/mem`, `/dev/kmem`, `/dev/port`, high) or a whole disk (`/dev/sda`, `/dev/nvme0n1`, medium) |
 | HL017 | medium | Opts out of the daemon's user-namespace remapping (`userns_mode: host`) |
 | HL018 | low | Processes can gain privileges through setuid binaries: no `no-new-privileges:true` (opt-in: `--strict`) |
+| HL019 | medium | Shares the host's cgroup namespace (`cgroup: host`) |
 
 Findings are advice, not gospel. A reverse proxy is supposed to publish 80/443
 to the world; `homelab-audit` still lists it so you can confirm it is intentional.

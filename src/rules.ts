@@ -230,6 +230,24 @@ export const rules: Rule[] = [
         : [],
   },
   {
+    // cgroup: host shows the container the host's whole cgroup tree: every service's limits and usage, and, with
+    // write access to /sys/fs/cgroup, a way to change them.
+    id: "HL019",
+    check: (s): Finding[] =>
+      s.cgroupMode === "host"
+        ? [
+            {
+              rule: "HL019",
+              severity: "medium",
+              service: s.name,
+              message:
+                "Shares the host's cgroup namespace (`cgroup: host`): it sees every container's limits and usage",
+              fix: "Remove `cgroup: host`; the default (`private`) is what almost every service needs",
+            },
+          ]
+        : [],
+  },
+  {
     id: "HL007",
     check: (s): Finding[] =>
       s.volumes.flatMap((v): Finding[] => {

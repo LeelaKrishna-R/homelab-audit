@@ -344,3 +344,24 @@ test("HL018 (opt-in): a service without no-new-privileges is flagged only with s
   assert.deepEqual(strict.map((f) => f.service).sort(), ["off", "plain"]);
   assert.ok(strict.every((f) => f.severity === "low"));
 });
+
+test("HL019: cgroup: host is flagged, private or unset is not", () => {
+  const yaml = `services:
+  app:
+    image: app:1.0
+    restart: unless-stopped
+    cgroup: host
+  quiet:
+    image: app:1.0
+    restart: unless-stopped
+    cgroup: private
+  other:
+    image: app:1.0
+    restart: unless-stopped
+`;
+  const f = auditCompose(parseCompose(yaml)).filter((x) => x.rule === "HL019");
+  assert.deepEqual(
+    f.map((x) => [x.service, x.severity]),
+    [["app", "medium"]],
+  );
+});

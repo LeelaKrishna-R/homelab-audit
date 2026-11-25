@@ -51,6 +51,8 @@ export interface Service {
   devices: string[];
   /** `userns_mode:` as written ("host" turns off the daemon's user-namespace remapping). */
   usernsMode?: string;
+  /** `cgroup:` as written ("host" shares the host's cgroup namespace; "private" is the default on cgroup v2). */
+  cgroupMode?: string;
   restart?: string;
   hasRestartPolicy: boolean;
   /** A `healthcheck:` that runs (not `disable: true`, not `test: ["NONE"]`). The image may still define one. */
